@@ -1,0 +1,4 @@
+(executable
+ (public_name mleadsheet)
+ (name main)
+ (libraries mleadsheet))
