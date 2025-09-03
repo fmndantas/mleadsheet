@@ -1,2 +1,3 @@
 (library
- (name mleadsheet))
+ (name mleadsheet)
+ (libraries angstrom))

@@ -8,6 +8,11 @@ module TestableNoteName = struct
   let pp fmt = function
     | C -> Format.fprintf fmt "C"
     | D -> Format.fprintf fmt "D"
+    | E -> Format.fprintf fmt "E"
+    | F -> Format.fprintf fmt "F"
+    | G -> Format.fprintf fmt "G"
+    | A -> Format.fprintf fmt "A"
+    | B -> Format.fprintf fmt "B"
 
   let equal = ( = )
 end
@@ -22,8 +27,15 @@ let test_note_name_parsing =
     [
       make_test_data "C" "c" TestableNoteName.C;
       make_test_data "D" "d" TestableNoteName.D;
+      make_test_data "E" "e" TestableNoteName.E;
+      make_test_data "F" "f" TestableNoteName.F;
+      make_test_data "G" "g" TestableNoteName.G;
+      make_test_data "A" "a" TestableNoteName.A;
+      make_test_data "B" "b" TestableNoteName.B;
     ]
     (fun input expected_output ->
-      input |> Sut.parse_note_name |> check t "note name" expected_output)
+      match Angstrom.parse_string ~consume:All Sut.parse_note_name input with
+      | Ok v -> check t "note name" v expected_output
+      | Error msg -> failwith msg)
 
 let suite : return test list = [ test_note_name_parsing ]
