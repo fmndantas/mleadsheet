@@ -27,10 +27,10 @@ module TestableClef = struct
   let equal = ( = )
 end
 
-let assert_parser (input : string) (parser : 'a Angstrom.t)
-    (assertFn : 'a -> unit) =
+let assert_parser (assert_fn : 'a * 'a -> unit) (parser : 'a Angstrom.t)
+    (input : string) (expected_output : 'a) =
   match Angstrom.parse_string ~consume:All parser input with
-  | Ok v -> assertFn v
+  | Ok v -> assert_fn (expected_output, v)
   | Error msg -> failwith msg
 
 let test_note_name_parsing =
@@ -45,9 +45,10 @@ let test_note_name_parsing =
       make_test_data "A" "a" TestableNoteName.A;
       make_test_data "B" "b" TestableNoteName.B;
     ]
-    (fun input expected_output ->
-      assert_parser input Mleadsheet.Parser.parse_note_name (fun result ->
-          check t "note name" expected_output result))
+    (assert_parser
+       (fun (expected_output, result) ->
+         check t "note name" expected_output result)
+       Mleadsheet.Parser.parse_note_name)
 
 let test_clef_parsing =
   let t = testable TestableClef.pp TestableClef.equal in
@@ -56,8 +57,8 @@ let test_clef_parsing =
       make_test_data "F" "f" TestableClef.F;
       make_test_data "G" "g" TestableClef.G;
     ]
-    (fun input expected_output ->
-      assert_parser input Mleadsheet.Parser.parse_clef (fun result ->
-          check t "clef" expected_output result))
+    (assert_parser
+       (fun (expected_output, result) -> check t "clef" expected_output result)
+       Mleadsheet.Parser.parse_clef)
 
 let suite : return test list = [ test_note_name_parsing; test_clef_parsing ]
