@@ -17,8 +17,6 @@ module TestableNoteName = struct
   let equal = ( = )
 end
 
-module Sut = struct
-  include Mleadsheet.Parser
 end
 
 let assert_parser (input : string) (parser : 'a Angstrom.t)
@@ -40,7 +38,7 @@ let test_note_name_parsing =
       make_test_data "B" "b" TestableNoteName.B;
     ]
     (fun input expected_output ->
-      assert_parser input Sut.parse_note_name (fun result ->
+      assert_parser input Mleadsheet.Parser.parse_note_name (fun result ->
           check t "note name" expected_output result))
 
 let suite : return test list = [ test_note_name_parsing ]
