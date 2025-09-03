@@ -21,6 +21,12 @@ module Sut = struct
   include Mleadsheet.Parser
 end
 
+let assert_parser (input : string) (parser : 'a Angstrom.t)
+    (assertFn : 'a -> unit) =
+  match Angstrom.parse_string ~consume:All parser input with
+  | Ok v -> assertFn v
+  | Error msg -> failwith msg
+
 let test_note_name_parsing =
   let t = testable TestableNoteName.pp TestableNoteName.equal in
   test_theory "note name parsing"
@@ -34,8 +40,7 @@ let test_note_name_parsing =
       make_test_data "B" "b" TestableNoteName.B;
     ]
     (fun input expected_output ->
-      match Angstrom.parse_string ~consume:All Sut.parse_note_name input with
-      | Ok v -> check t "note name" v expected_output
-      | Error msg -> failwith msg)
+      assert_parser input Sut.parse_note_name (fun result ->
+          check t "note name" expected_output result))
 
 let suite : return test list = [ test_note_name_parsing ]
