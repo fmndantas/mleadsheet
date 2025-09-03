@@ -17,6 +17,14 @@ module TestableNoteName = struct
   let equal = ( = )
 end
 
+module TestableClef = struct
+  include Clef
+
+  let pp fmt = function
+    | F -> Format.fprintf fmt "F"
+    | G -> Format.fprintf fmt "G"
+
+  let equal = ( = )
 end
 
 let assert_parser (input : string) (parser : 'a Angstrom.t)
@@ -41,4 +49,15 @@ let test_note_name_parsing =
       assert_parser input Mleadsheet.Parser.parse_note_name (fun result ->
           check t "note name" expected_output result))
 
-let suite : return test list = [ test_note_name_parsing ]
+let test_clef_parsing =
+  let t = testable TestableClef.pp TestableClef.equal in
+  test_theory "clef parsing"
+    [
+      make_test_data "F" "f" TestableClef.F;
+      make_test_data "G" "g" TestableClef.G;
+    ]
+    (fun input expected_output ->
+      assert_parser input Mleadsheet.Parser.parse_clef (fun result ->
+          check t "clef" expected_output result))
+
+let suite : return test list = [ test_note_name_parsing; test_clef_parsing ]
