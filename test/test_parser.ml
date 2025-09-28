@@ -45,12 +45,20 @@ module TestableDuration = struct
   let equal = ( = )
 end
 
+module TestableNote = struct
+  type t = note
+
+  let pp fmt = Format.fprintf fmt 
+  let equal = ( = )
+end
+
 let assert_parser (assert_fn : 'a * 'a -> unit) (parser : 'a Angstrom.t)
     (input : string) (expected_output : 'a) =
   match Angstrom.parse_string ~consume:All parser input with
   | Ok v -> assert_fn (expected_output, v)
   | Error msg -> failwith msg
 
+(* TODO: add sharp and flat *)
 let test_note_name_parsing =
   let t = testable TestableNoteName.pp TestableNoteName.equal in
   test_theory "note name parsing"
@@ -99,5 +107,24 @@ let test_duration_parsing =
          check t "duration" expected_output result)
        Mleadsheet.Parser.parse_duration)
 
+let test_note_parsing =
+  let t = testable TestableNote.pp TestableNote.equal in
+  test_theory "nome parsing"
+    [
+      make_test_data "c8" (None, "c8")
+        { note_name = NoteName.C; octave = 4; duration = Duration.Eighth };
+    ]
+    (fun (initial_state, input) expected_output ->
+      match
+        Angstrom.parse_string ~consume:All Mleadsheet.Parser.parse_note input
+      with
+      | Ok v -> check t "note" expected_output v
+      | Error msg -> ignore @@ failwith msg)
+
 let suite : return test list =
-  [ test_note_name_parsing; test_clef_parsing; test_duration_parsing ]
+  [
+    test_note_name_parsing;
+    test_clef_parsing;
+    test_duration_parsing;
+    test_note_parsing;
+  ]

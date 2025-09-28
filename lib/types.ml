@@ -19,3 +19,5 @@ module Duration = struct
     | Sixteenth
     | SixteenthDotted
 end
+
+type note = { note_name : NoteName.t; duration : Duration.t; octave : int }
