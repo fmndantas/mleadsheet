@@ -111,38 +111,59 @@ let test_duration_parsing =
 module M = struct
   open Angstrom
 
-  let lift (s0 : 's) (p : 'a Angstrom.t) : ('a * 's) Angstrom.t =
-    p >>| fun x -> (x, s0)
+  let lift (s0 : 's) (p : 'a t) : ('a * 's) t = p >>| fun x -> (x, s0)
 
-  let update_state (f : 's -> 's) : 'a * 's -> ('a * 's) Angstrom.t =
-   fun (v, s0) -> Angstrom.return (v, f s0)
+  let update_state (f : 's -> 's) : 'a * 's -> ('a * 's) t =
+   fun (v, s0) -> return (v, f s0)
+
+  let many (p : ('a * 's) t) : ('a list * 's) t =
+    p |> Angstrom.many >>| fun x ->
+    let a, b = List.split x in
+    List.iter (fun s -> Printf.printf "%d " s) b;
+    (a, List.hd (List.rev b))
 end
 
-let test_lift () =
-  let p0 = Angstrom.char 'f' in
-  let p1 = M.lift "this is the state" p0 in
-  match Angstrom.parse_string ~consume:All p1 "f" with
-  | Ok (_, s) -> check string "foo" "this is the state" s
-  | Error _ -> failwith "todo"
+module MSpec = struct
+  open Angstrom
 
-let test_update_state () =
-  let p0 = Angstrom.char 'f' in
-  let p1 = M.lift "this is the state" p0 in
-  let (p2 : (char * string) Angstrom.t) =
-    Angstrom.bind p1 ~f:(M.update_state (fun s0 -> s0 ^ ", but updated"))
-  in
-  match Angstrom.parse_string ~consume:All p2 "f" with
-  | Ok (_, s) -> check string "foo" "this is the state, but updated" s
-  | Error _ -> failwith "todo"
+  let test_lift () =
+    let p0 = Angstrom.char 'f' in
+    let p1 = M.lift "this is the state" p0 in
+    match Angstrom.parse_string ~consume:All p1 "f" with
+    | Ok (_, s) -> check Alcotest.string "state" "this is the state" s
+    | Error _ -> failwith "todo"
+
+  let test_update_state () =
+    let p0 = Angstrom.char 'f' in
+    let p1 = M.lift "this is the state" p0 in
+    let p2 = p1 >>= M.update_state (fun s0 -> s0 ^ ", but updated") in
+    match Angstrom.parse_string ~consume:All p2 "f" with
+    | Ok (_, s) ->
+        check Alcotest.string "state" "this is the state, but updated" s
+    | Error _ -> failwith "todo"
+
+  let test_parsing_of_f_letters () =
+    let p0 = Angstrom.any_char in
+    let p1 = M.lift 0 p0 in
+    let p2 = p1 >>= M.update_state (fun s0 -> 
+      Printf.printf "s0 = %d\n" s0;
+      s0 + 1
+    ) in
+    let p3 = M.many p2 in
+    match Angstrom.parse_string ~consume:All p3 "fernandofernando" with
+    | Ok (_, s) -> check Alcotest.int "state" 2 s
+    | Error msg -> failwith msg
+end
 
 let suite : return test list =
   [
-    (* test_note_name_parsing; *)
-    (* test_clef_parsing; *)
-    (* test_duration_parsing; *)
-    ( "test_foo",
+    test_note_name_parsing;
+    test_clef_parsing;
+    test_duration_parsing;
+    ( "test lifted parsers",
       [
-        test_case "lift" `Quick test_lift;
-        test_case "update state" `Quick test_update_state;
+        test_case "lift" `Quick MSpec.test_lift;
+        test_case "update state" `Quick MSpec.test_update_state;
+        test_case "parsing of f letters" `Quick MSpec.test_parsing_of_f_letters;
       ] );
   ]
