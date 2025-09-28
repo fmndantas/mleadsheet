@@ -1,4 +1,4 @@
 (test
  (name test_mleadsheet)
  (modules theory test_parser test_mleadsheet)
- (libraries alcotest mleadsheet))
+ (libraries alcotest mleadsheet angstrom))

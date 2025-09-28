@@ -34,5 +34,3 @@ let (parse_duration : Duration.t t) =
   | "16" -> Duration.Sixteenth
   | "16." -> Duration.SixteenthDotted
   | v -> Printf.sprintf "Unknown duration: \"%s\"" v |> failwith
-
-let (parse_note: note t) = failwith "todo"

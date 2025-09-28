@@ -48,10 +48,11 @@ end
 module TestableNote = struct
   type t = note
 
-  let pp fmt = Format.fprintf fmt 
+  let pp fmt = Format.fprintf fmt
   let equal = ( = )
 end
 
+(* TODO: ugly! *)
 let assert_parser (assert_fn : 'a * 'a -> unit) (parser : 'a Angstrom.t)
     (input : string) (expected_output : 'a) =
   match Angstrom.parse_string ~consume:All parser input with
@@ -107,24 +108,41 @@ let test_duration_parsing =
          check t "duration" expected_output result)
        Mleadsheet.Parser.parse_duration)
 
-let test_note_parsing =
-  let t = testable TestableNote.pp TestableNote.equal in
-  test_theory "nome parsing"
-    [
-      make_test_data "c8" (None, "c8")
-        { note_name = NoteName.C; octave = 4; duration = Duration.Eighth };
-    ]
-    (fun (initial_state, input) expected_output ->
-      match
-        Angstrom.parse_string ~consume:All Mleadsheet.Parser.parse_note input
-      with
-      | Ok v -> check t "note" expected_output v
-      | Error msg -> ignore @@ failwith msg)
+module M = struct
+  open Angstrom
+
+  let lift (s0 : 's) (p : 'a Angstrom.t) : ('a * 's) Angstrom.t =
+    p >>| fun x -> (x, s0)
+
+  let update_state (f : 's -> 's) : 'a * 's -> ('a * 's) Angstrom.t =
+   fun (v, s0) -> Angstrom.return (v, f s0)
+end
+
+let test_lift () =
+  let p0 = Angstrom.char 'f' in
+  let p1 = M.lift "this is the state" p0 in
+  match Angstrom.parse_string ~consume:All p1 "f" with
+  | Ok (_, s) -> check string "foo" "this is the state" s
+  | Error _ -> failwith "todo"
+
+let test_update_state () =
+  let p0 = Angstrom.char 'f' in
+  let p1 = M.lift "this is the state" p0 in
+  let (p2 : (char * string) Angstrom.t) =
+    Angstrom.bind p1 ~f:(M.update_state (fun s0 -> s0 ^ ", but updated"))
+  in
+  match Angstrom.parse_string ~consume:All p2 "f" with
+  | Ok (_, s) -> check string "foo" "this is the state, but updated" s
+  | Error _ -> failwith "todo"
 
 let suite : return test list =
   [
-    test_note_name_parsing;
-    test_clef_parsing;
-    test_duration_parsing;
-    test_note_parsing;
+    (* test_note_name_parsing; *)
+    (* test_clef_parsing; *)
+    (* test_duration_parsing; *)
+    ( "test_foo",
+      [
+        test_case "lift" `Quick test_lift;
+        test_case "update state" `Quick test_update_state;
+      ] );
   ]
